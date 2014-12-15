@@ -1,9 +1,9 @@
 -module(efene_rebar3_plugin).
-%-behaviour(provider).
+-behaviour(provider).
 
 -export([init/1, do/1, format_error/2]).
 
-%-include_lib("rebar3/include/rebar.hrl").
+-include_lib("rebar3/include/rebar.hrl").
 
 -define(PROVIDER, efene).
 -define(DEPS, [app_discovery]).
