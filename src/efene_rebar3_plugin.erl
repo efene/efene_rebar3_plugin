@@ -41,7 +41,11 @@ format_error(Reason) ->
 
 compile(Path, DestPath) ->
     io:format("Compiling ~s~n", [Path]),
-    efene:compile(Path, DestPath).
+    case efene:compile(Path, DestPath) of
+        {error, {fn, _Module, Reason}} ->
+            io:format("~s", [Reason]);
+        Other -> Other
+    end.
 
 compile_sources(App) ->
     Path = filename:join(rebar_app_info:dir(App), "src"),
