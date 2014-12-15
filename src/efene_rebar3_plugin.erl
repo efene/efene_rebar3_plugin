@@ -1,9 +1,9 @@
 -module(efene_rebar3_plugin).
 -behaviour(provider).
 
--export([init/1, do/1, format_error/2]).
+-export([init/1, do/1, format_error/1]).
 
--include_lib("rebar3/include/rebar.hrl").
+%-include_lib("rebar3/include/rebar.hrl").
 
 -define(PROVIDER, efene).
 -define(DEPS, [app_discovery]).
@@ -31,8 +31,8 @@ do(State) ->
     lists:foreach(fun compile_sources/1, rebar_state:project_apps(State)),
     {ok, State}.
 
--spec format_error(any(), rebar_state:t()) ->  iolist().
-format_error(Reason, _State) ->
+-spec format_error(any()) ->  iolist().
+format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
 %% ===================================================================
