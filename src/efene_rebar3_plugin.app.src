@@ -1,4 +1,4 @@
-{application, provider_efene,
+{application, efene_rebar3_plugin,
  [{description, "efene rebar3 plugin"}
  ,{vsn, "0.1.0"}
  ,{registered, []}
