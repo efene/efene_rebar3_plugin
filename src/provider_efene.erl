@@ -3,7 +3,7 @@
 
 -export([init/1, do/1, format_error/2]).
 
--include_lib("rebar3/include/rebar.hrl").
+%-include_lib("rebar3/include/rebar.hrl").
 
 -define(PROVIDER, efene).
 -define(DEPS, [app_discovery]).
@@ -41,7 +41,7 @@ format_error(Reason, _State) ->
 compile_sources(App) ->
     Path = filename:join(rebar_app_info:dir(App),"src"),
     Mods = find_source_files(Path),
-    lists:foreach(fn efene:compile/1, Mods),
+    lists:foreach(fun efene:compile/1, Mods),
     ok.
 
 find_source_files(Path) ->
