@@ -28,6 +28,7 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
+    lists:foreach(fun compile_sources/1, rebar_state:project_apps(State)),
     {ok, State}.
 
 -spec format_error(any(), rebar_state:t()) ->  iolist().
