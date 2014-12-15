@@ -1,0 +1,48 @@
+-module(provider_efene).
+-behaviour(provider).
+
+-export([init/1, do/1, format_error/2]).
+
+-include_lib("rebar3/include/rebar.hrl").
+
+-define(PROVIDER, efene).
+-define(DEPS, [app_discovery]).
+
+%% ===================================================================
+%% Public API
+%% ===================================================================
+-spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
+init(State) ->
+    Provider = providers:create([
+            {name, ?PROVIDER},          % The 'user friendly' name of the task
+            {module, ?MODULE},          % The module implementation of the task
+            {bare, true},               % The task can be run by the user, always true
+            {deps, ?DEPS},              % The list of dependencies
+            {example, "rebar efene file.fn"}, % How to use the plugin
+            {opts, []},                  % list of options understood by the plugin
+            {short_desc, "efene rebar3 plugin"},
+            {desc, ""}
+    ]),
+    {ok, rebar_state:add_provider(State, Provider)}.
+
+
+-spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
+do(State) ->
+    {ok, State}.
+
+-spec format_error(any(), rebar_state:t()) ->  iolist().
+format_error(Reason, _State) ->
+    io_lib:format("~p", [Reason]).
+
+%% ===================================================================
+%% Private API
+%% ===================================================================
+
+compile_sources(App) ->
+    Path = filename:join(rebar_app_info:dir(App),"src"),
+    Mods = find_source_files(Path),
+    lists:foreach(fn efene:compile/1, Mods),
+    ok.
+
+find_source_files(Path) ->
+    [filename:join(Path, Mod) || Mod <- filelib:wildcard("*.fn", Path)].
