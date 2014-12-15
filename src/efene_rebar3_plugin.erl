@@ -39,10 +39,13 @@ format_error(Reason) ->
 %% Private API
 %% ===================================================================
 
+compile(Path) ->
+    io:format("Compiling ~s~n", [Path]).
+
 compile_sources(App) ->
     Path = filename:join(rebar_app_info:dir(App),"src"),
     Mods = find_source_files(Path),
-    lists:foreach(fun efene:compile/1, Mods),
+    lists:foreach(fun compile/1, Mods),
     ok.
 
 find_source_files(Path) ->
