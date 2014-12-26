@@ -5,7 +5,7 @@
 
 %-include_lib("rebar3/include/rebar.hrl").
 
--define(PROVIDER, efene).
+-define(PROVIDER, compile).
 -define(DEPS, [install_deps, app_discovery, compile]).
 
 %% ===================================================================
@@ -16,9 +16,10 @@ init(State) ->
     Provider = providers:create([
             {name, ?PROVIDER},          % The 'user friendly' name of the task
             {module, ?MODULE},          % The module implementation of the task
-            {bare, true},               % The task can be run by the user, always true
+            {namespace, efene},
+            {bare, false},
             {deps, ?DEPS},              % The list of dependencies
-            {example, "rebar efene file.fn"}, % How to use the plugin
+            {example, "rebar efene compile"}, % How to use the plugin
             {opts, []},                  % list of options understood by the plugin
             {short_desc, "efene rebar3 plugin"},
             {desc, ""}
