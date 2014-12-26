@@ -6,4 +6,5 @@
     [kernel,stdlib]}
  ,{env,[]}
  ,{modules, []}
+ ,{env, [{providers, [efene]}]}
  ]}.
