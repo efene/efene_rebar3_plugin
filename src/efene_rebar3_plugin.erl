@@ -43,8 +43,9 @@ format_error(Reason) ->
 compile(Path, DestPath) ->
     io:format("Compiling ~s~n", [Path]),
     case efene:compile(Path, DestPath) of
-        {error, {fn, _Module, Reason}} ->
-            io:format("~s", [Reason]);
+        {error, _}=Error ->
+            Reason = fn_error:normalize(Error),
+            io:format("error:~s", [Reason]);
         Other -> Other
     end.
 
