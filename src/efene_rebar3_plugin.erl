@@ -45,7 +45,7 @@ compile(Path, DestPath) ->
     case efene:compile(Path, DestPath) of
         {error, _}=Error ->
             Reason = fn_error:normalize(Error),
-            io:format("error:~s", [Reason]);
+            io:format("error:~s~n", [Reason]);
         Other -> Other
     end.
 
