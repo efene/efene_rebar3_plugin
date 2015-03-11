@@ -1,4 +1,4 @@
--module(efene_rebar3_plugin).
+-module(rebar3_efene_compile).
 -behaviour(provider).
 
 -export([init/1, do/1, format_error/1]).
