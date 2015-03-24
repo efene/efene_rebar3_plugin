@@ -6,7 +6,7 @@
 %-include_lib("rebar3/include/rebar.hrl").
 
 -define(PROVIDER, compile).
--define(DEPS, [{default, install_deps}, {default, app_discovery}, {default, compile}]).
+-define(DEPS, [{default, install_deps}, {default, app_discovery}]).
 
 %% ===================================================================
 %% Public API
