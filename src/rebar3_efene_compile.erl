@@ -43,30 +43,30 @@ format_error(Reason) ->
 %% Private API
 %% ===================================================================
 
-compile("rawlex", Path, _DestPath) ->
+compile("rawlex", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_raw_lex(Path), 1000]);
-compile("lex", Path, _DestPath) ->
+compile("lex", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_lex(Path), 1000]);
-compile("ast", Path, _DestPath) ->
+compile("ast", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_ast(Path), 1000]);
-compile("mod", Path, _DestPath) ->
+compile("mod", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_mod(Path), 1000]);
-compile("erl", Path, _DestPath) ->
+compile("erl", Path, _DestPath, _ErlOpts) ->
     io:format("~s~n", [efene:to_erl(Path)]);
-compile("erlast", Path, _DestPath) ->
+compile("erlast", Path, _DestPath, _ErlOpts) ->
     Data = case efene:to_erl_ast(Path) of
                {ok, {Ast, _State}} -> Ast;
                Other -> Other
            end,
     io:format("~P~n", [Data, 1000]);
-compile("beam", Path, DestPath) ->
-    case efene:compile(Path, DestPath) of
+compile("beam", Path, DestPath, ErlOpts) ->
+    case efene:compile(Path, DestPath, ErlOpts) of
         {error, _}=Error ->
             Reason = fn_error:normalize(Error),
             io:format("error:~s~n", [Reason]);
         Other -> Other
     end;
-compile(Format, _Path, _DestPath) ->
+compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
 compile_sources(App, State) ->
@@ -76,14 +76,15 @@ compile_sources(App, State) ->
     Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
+    ErlOpts = rebar_utils:erl_opts(State),
     case proplists:lookup(file, RawOpts) of
         none ->
             lists:foreach(fun (ModPath) ->
                               io:format("Compiling ~s~n", [ModPath]),
-                              compile(Format, ModPath, DestPath)
+                              compile(Format, ModPath, DestPath, ErlOpts)
                           end, Mods);
         {file, ModPath} ->
-            compile(Format, ModPath, DestPath)
+            compile(Format, ModPath, DestPath, ErlOpts)
     end,
     ok.
 
