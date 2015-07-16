@@ -31,8 +31,7 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    lists:foreach(fun (App) -> compile_sources(App, State) end,
-                  rebar_state:project_apps(State)),
+    compile_sources(State),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
@@ -77,9 +76,9 @@ compile("beam", Path, DestPath, ErlOpts) ->
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
-compile_sources(App, State) ->
-    Path = filename:join(rebar_app_info:dir(App), "src"),
-    DestPath = filename:join(rebar_app_info:dir(App), "ebin"),
+compile_sources(State) ->
+    Path = filename:join(rebar_state:dir(State), "src"),
+    DestPath = filename:join(rebar_state:dir(State), "ebin"),
     ok = filelib:ensure_dir(filename:join(DestPath, "a")),
     Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
