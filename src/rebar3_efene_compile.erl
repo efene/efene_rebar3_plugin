@@ -63,8 +63,13 @@ compile("beam", Path, DestPath, ErlOpts) ->
     case efene:compile(Path, DestPath, ErlOpts) of
         {error, _}=Error ->
             Reason = fn_error:normalize(Error),
-            io:format("error:~s~n", [Reason]);
-        Other -> Other
+            io:format("error: ~s~n", [Reason]);
+        {ok, CompileInfo} ->
+            efene:print_warnings(proplists:get_value(warnings, CompileInfo, [])),
+            ok;
+        Other ->
+            io:format("unknown result: ~p~n", [Other]),
+            Other
     end;
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
