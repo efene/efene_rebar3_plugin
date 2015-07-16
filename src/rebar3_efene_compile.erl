@@ -62,10 +62,13 @@ compile("erlast", Path, _DestPath, _ErlOpts) ->
 compile("beam", Path, DestPath, ErlOpts) ->
     case efene:compile(Path, DestPath, ErlOpts) of
         {error, _}=Error ->
-            Reason = fn_error:normalize(Error),
-            io:format("error: ~s~n", [Reason]);
+            efene:print_errors([Error], "errors");
+        {error, Errors, Warnings} ->
+            efene:print_errors(Errors, "errors"),
+            efene:print_errors(Warnings, "warnings"),
+            ok;
         {ok, CompileInfo} ->
-            efene:print_warnings(proplists:get_value(warnings, CompileInfo, [])),
+            efene:print_errors(proplists:get_value(warnings, CompileInfo, []), "warnings"),
             ok;
         Other ->
             io:format("unknown result: ~p~n", [Other]),
