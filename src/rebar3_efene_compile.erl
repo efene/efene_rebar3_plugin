@@ -31,7 +31,10 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    compile_sources(State),
+    CompilePaths = compile_paths(State),
+    lists:foreach(fun ({Path, DestPath}) ->
+                          compile_sources(State, Path, DestPath)
+                  end, CompilePaths),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
@@ -41,6 +44,24 @@ format_error(Reason) ->
 %% ===================================================================
 %% Private API
 %% ===================================================================
+
+compile_paths(State) ->
+    Path = filename:join(rebar_state:dir(State), "src"),
+    SrcPathExists = filelib:is_dir(Path),
+
+    % if the src folder exists, we assume is not a release, so we compile
+    % the src folder only
+    if SrcPathExists ->
+           DestPath = filename:join(rebar_state:dir(State), "ebin"),
+           [{Path, DestPath}];
+       true ->
+           Apps = rebar_state:project_apps(State),
+           lists:map(fun (App) ->
+                             AppPath = filename:join(rebar_app_info:dir(App), "src"),
+                             AppDestPath = filename:join(rebar_app_info:dir(App), "ebin"),
+                             {AppPath, AppDestPath}
+                     end, Apps)
+    end.
 
 compile("rawlex", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_raw_lex(Path), 1000]);
@@ -76,9 +97,7 @@ compile("beam", Path, DestPath, ErlOpts) ->
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
-compile_sources(State) ->
-    Path = filename:join(rebar_state:dir(State), "src"),
-    DestPath = filename:join(rebar_state:dir(State), "ebin"),
+compile_sources(State, Path, DestPath) ->
     ok = filelib:ensure_dir(filename:join(DestPath, "a")),
     Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
