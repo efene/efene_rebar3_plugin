@@ -31,10 +31,26 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    CompilePaths = compile_paths(State),
-    lists:foreach(fun ({Path, DestPath, ErlOpts}) ->
-                          compile_sources(State, ErlOpts, Path, DestPath)
-                  end, CompilePaths),
+    Apps = case rebar_state:current_app(State) of
+               undefined ->
+                   rebar_state:project_apps(State);
+               AppInfo ->
+                   [AppInfo]
+           end,
+    [begin
+         Opts = rebar_app_info:opts(AppInfo),
+         OutDir = rebar_app_info:out_dir(AppInfo),
+         SourceDir = filename:join(rebar_app_info:dir(AppInfo), "src"),
+         FoundFiles = rebar_utils:find_files(SourceDir, ".*\\.fn\$"),
+
+         CompileFun = fun(Source, Opts1) ->
+                              ErlOpts = rebar_opts:erl_opts(Opts1),
+                              compile_source(State, ErlOpts, Source, OutDir)
+                      end,
+
+         rebar_base_compiler:run(Opts, [], FoundFiles, CompileFun)
+     end || AppInfo <- Apps],
+
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
@@ -44,27 +60,6 @@ format_error(Reason) ->
 %% ===================================================================
 %% Private API
 %% ===================================================================
-
-compile_paths(State) ->
-    Path = filename:join(rebar_state:dir(State), "src"),
-    SrcPathExists = filelib:is_dir(Path),
-
-    % if the src folder exists, we assume is not a release, so we compile
-    % the src folder only
-    if SrcPathExists ->
-           DestPath = filename:join(rebar_state:dir(State), "ebin"),
-           ErlOpts = rebar_opts:erl_opts(rebar_state:opts(State)),
-           [{Path, DestPath, ErlOpts}];
-       true ->
-           Apps = rebar_state:project_apps(State),
-           lists:map(fun (App) ->
-                             AppOpts = rebar_app_info:opts(App),
-                             ErlOpts = rebar_opts:erl_opts(AppOpts),
-                             AppPath = filename:join(rebar_app_info:dir(App), "src"),
-                             AppDestPath = filename:join(rebar_app_info:dir(App), "ebin"),
-                             {AppPath, AppDestPath, ErlOpts}
-                     end, Apps)
-    end.
 
 compile("rawlex", Path, _DestPath, _ErlOpts) ->
     io:format("~P~n", [efene:to_raw_lex(Path), 1000]);
@@ -100,24 +95,13 @@ compile("beam", Path, DestPath, ErlOpts) ->
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
-compile_sources(State, ErlOpts, Path, DestPath) ->
+compile_source(State, ErlOpts, Source, DestPath) ->
     ok = filelib:ensure_dir(filename:join(DestPath, "a")),
-    Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
-    case proplists:lookup(file, RawOpts) of
-        none ->
-            lists:foreach(fun (ModPath) ->
-                              io:format("Compiling ~s~n", [ModPath]),
-                              compile(Format, ModPath, DestPath, ErlOpts)
-                          end, Mods);
-        {file, ModPath} ->
-            compile(Format, ModPath, DestPath, ErlOpts)
-    end,
+    io:format("Compiling ~s~n", [Source]),
+    compile(Format, Source, DestPath, ErlOpts),
     ok.
-
-find_source_files(Path) ->
-    [filename:join(Path, Mod) || Mod <- filelib:wildcard("*.fn", Path)].
 
 help(format) -> "format to compile code to, one of rawlex, lex, ast, mod, erlast, erl, beam";
 help(file) -> "file to compile, if omited all files in the project are compiled".
