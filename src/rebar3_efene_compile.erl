@@ -53,7 +53,7 @@ compile_paths(State) ->
     % the src folder only
     if SrcPathExists ->
            DestPath = filename:join(rebar_state:dir(State), "ebin"),
-           ErlOpts = rebar_state:get(State, erl_opts, []),
+           ErlOpts = rebar_opts:erl_opts(rebar_state:opts(State)),
            [{Path, DestPath, ErlOpts}];
        true ->
            Apps = rebar_state:project_apps(State),
