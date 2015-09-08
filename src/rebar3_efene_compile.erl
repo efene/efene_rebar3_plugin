@@ -32,8 +32,8 @@ init(State) ->
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     CompilePaths = compile_paths(State),
-    lists:foreach(fun ({Path, DestPath}) ->
-                          compile_sources(State, Path, DestPath)
+    lists:foreach(fun ({Path, DestPath, ErlOpts}) ->
+                          compile_sources(State, ErlOpts, Path, DestPath)
                   end, CompilePaths),
     {ok, State}.
 
@@ -53,13 +53,16 @@ compile_paths(State) ->
     % the src folder only
     if SrcPathExists ->
            DestPath = filename:join(rebar_state:dir(State), "ebin"),
-           [{Path, DestPath}];
+           ErlOpts = rebar_state:get(State, erl_opts, []),
+           [{Path, DestPath, ErlOpts}];
        true ->
            Apps = rebar_state:project_apps(State),
            lists:map(fun (App) ->
+                             AppOpts = rebar_app_info:opts(App),
+                             ErlOpts = rebar_opts:erl_opts(AppOpts),
                              AppPath = filename:join(rebar_app_info:dir(App), "src"),
                              AppDestPath = filename:join(rebar_app_info:dir(App), "ebin"),
-                             {AppPath, AppDestPath}
+                             {AppPath, AppDestPath, ErlOpts}
                      end, Apps)
     end.
 
@@ -97,12 +100,11 @@ compile("beam", Path, DestPath, ErlOpts) ->
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
-compile_sources(State, Path, DestPath) ->
+compile_sources(State, ErlOpts, Path, DestPath) ->
     ok = filelib:ensure_dir(filename:join(DestPath, "a")),
     Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
-    ErlOpts = rebar_opts:erl_opts(State),
     case proplists:lookup(file, RawOpts) of
         none ->
             lists:foreach(fun (ModPath) ->
