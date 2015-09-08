@@ -101,7 +101,7 @@ compile_source(State, ErlOpts, Source, DestPath) ->
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
     io:format("Compiling ~s~n", [Source]),
-    compile(Format, Source, DestPath, ErlOpts),
+    compile(Format, Source, NewDestPath, ErlOpts),
     ok.
 
 help(format) -> "format to compile code to, one of rawlex, lex, ast, mod, erlast, erl, beam";
