@@ -31,6 +31,11 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
+    DepsPaths = rebar_state:code_paths(State, all_deps),
+    %PluginDepsPaths = rebar_state:code_paths(State, all_plugin_deps),
+    %rebar_utils:remove_from_code_path(PluginDepsPaths),
+    code:add_pathsa(DepsPaths),
+
     Apps = case rebar_state:current_app(State) of
                undefined ->
                    rebar_state:project_apps(State);
