@@ -96,7 +96,8 @@ compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
 compile_source(State, ErlOpts, Source, DestPath) ->
-    ok = filelib:ensure_dir(filename:join(DestPath, "a")),
+    NewDestPath = filename:join(DestPath, "ebin"),
+    ok = filelib:ensure_dir(filename:join(NewDestPath, "a")),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
     io:format("Compiling ~s~n", [Source]),
