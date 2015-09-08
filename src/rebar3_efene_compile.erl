@@ -102,7 +102,7 @@ compile_sources(State, Path, DestPath) ->
     Mods = find_source_files(Path),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
-    ErlOpts = rebar_utils:erl_opts(State),
+    ErlOpts = rebar_opts:erl_opts(State),
     case proplists:lookup(file, RawOpts) of
         none ->
             lists:foreach(fun (ModPath) ->
