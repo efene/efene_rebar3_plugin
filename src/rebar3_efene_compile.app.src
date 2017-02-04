@@ -7,4 +7,8 @@
  ,{env,[]}
  ,{modules, []}
  ,{env, [{providers, [efene]}]}
+
+ ,{maintainers,, ["Mariano Guerra"]}
+ ,{licenses, ["MIT"]}
+ ,{links, [{"Github", "https://github.com/efene/rebar3_efene_compile"}]}
  ]}.
