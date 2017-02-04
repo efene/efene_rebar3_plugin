@@ -46,14 +46,13 @@ do(State) ->
          Opts = rebar_app_info:opts(AppInfo),
          OutDir = rebar_app_info:out_dir(AppInfo),
          SourceDir = filename:join(rebar_app_info:dir(AppInfo), "src"),
-         FoundFiles = rebar_utils:find_files(SourceDir, ".*\\.fn\$"),
 
          CompileFun = fun(Source, Opts1) ->
                               ErlOpts = rebar_opts:erl_opts(Opts1),
                               compile_source(State, ErlOpts, Source, OutDir)
                       end,
 
-         rebar_base_compiler:run(Opts, [], FoundFiles, CompileFun)
+         rebar_base_compiler:run(Opts, [], SourceDir, ".fn", OutDir, ".beam", CompileFun)
      end || AppInfo <- Apps],
 
     {ok, State}.
