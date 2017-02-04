@@ -52,7 +52,7 @@ do(State) ->
                               compile_source(State, ErlOpts, Source, OutDir)
                       end,
 
-         rebar_base_compiler:run(Opts, [], SourceDir, ".fn", OutDir, ".beam", CompileFun)
+         rebar_base_compiler:run(Opts, [], SourceDir, ".fn", OutDir, ".beam", CompileFun, [])
      end || AppInfo <- Apps],
 
     {ok, State}.
