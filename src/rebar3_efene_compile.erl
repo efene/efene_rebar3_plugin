@@ -44,7 +44,7 @@ do(State) ->
            end,
     [begin
          Opts = rebar_app_info:opts(AppInfo),
-         OutDir = rebar_app_info:out_dir(AppInfo),
+         OutDir = rebar_app_info:ebin_dir(AppInfo),
          SourceDir = filename:join(rebar_app_info:dir(AppInfo), "src"),
 
          CompileFun = fun(Source, Target, Opts1) ->
@@ -100,12 +100,11 @@ compile(Format, _Path, _DestPath, _ErlOpts) ->
     io:format("Invalid format: ~s~n", [Format]).
 
 compile_source(State, ErlOpts, Source, DestPath) ->
-    NewDestPath = filename:join(DestPath, "ebin"),
-    ok = filelib:ensure_dir(filename:join(NewDestPath, "a")),
+    ok = filelib:ensure_dir(DestPath),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
     io:format("Compiling ~s~n", [Source]),
-    compile(Format, Source, NewDestPath, ErlOpts),
+    compile(Format, Source, filename:dirname(DestPath), ErlOpts),
     ok.
 
 help(format) -> "format to compile code to, one of rawlex, lex, ast, mod, erlast, erl, beam";
