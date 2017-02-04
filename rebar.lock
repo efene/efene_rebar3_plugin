@@ -1,0 +1,10 @@
+{"1.1.0",
+[{<<"aleppo">>,{pkg,<<"aleppo">>,<<"0.9.0">>},1},
+ {<<"ast_walk">>,{pkg,<<"ast_walk">>,<<"0.1.0">>},1},
+ {<<"efene">>,{pkg,<<"efene">>,<<"0.9.9">>},0}]}.
+[
+{pkg_hash,[
+ {<<"aleppo">>, <<"43B4EC269FA136E39DCECBD4323D4346E0EF069A62528A9154F1BB3ACD26E3E4">>},
+ {<<"ast_walk">>, <<"443AFF160305A091AA866C7CD82C0AEBF675A70AA7B25D817707EF4A94EB6AEB">>},
+ {<<"efene">>, <<"925E07C57C2C23C1D47EA81A35377515A935AF640DE56B1C198D8A87AC45479F">>}]}
+].
