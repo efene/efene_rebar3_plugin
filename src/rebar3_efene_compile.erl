@@ -36,15 +36,30 @@ do(State) ->
     %rebar_utils:remove_from_code_path(PluginDepsPaths),
     code:add_pathsa(DepsPaths),
 
-    Apps = case rebar_state:current_app(State) of
-               undefined ->
-                   rebar_state:project_apps(State);
-               AppInfo ->
-                   [AppInfo]
-           end,
-
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
+    case proplists:get_value(file, RawOpts, undefined) of
+        undefined -> compile_all(State, Format);
+        FilePath -> compile_file(State, FilePath, Format)
+    end.
+
+compile_file(State, Path, Format) ->
+    AppInfo = case rebar_state:current_app(State) of
+               undefined -> hd(rebar_state:project_apps(State));
+               AppInfo0 -> AppInfo0
+           end,
+    TargetDir = rebar_app_info:ebin_dir(AppInfo),
+    ErlOpts = rebar_state:get(State, erl_opts, []),
+    rebar_api:info("Compiling ~s", [Path]),
+    compile(Format, Path, TargetDir, ErlOpts),
+    {ok, State}.
+
+compile_all(State, Format) ->
+    Apps = case rebar_state:current_app(State) of
+               undefined -> rebar_state:project_apps(State);
+               AppInfo -> [AppInfo]
+           end,
+
     FirstFiles = [],
     SourceExt = ".fn",
     TargetExt = "." ++ Format,
@@ -56,7 +71,7 @@ do(State) ->
 
          CompileFun = fun(Source, Target, Opts1) ->
                               ErlOpts = rebar_opts:erl_opts(Opts1),
-                              compile_source(State, ErlOpts, Source, Target)
+                              compile_source(ErlOpts, Source, Target, Format)
                       end,
 
          rebar_base_compiler:run(Opts, FirstFiles, SourceDir, SourceExt,
@@ -73,27 +88,41 @@ format_error(Reason) ->
 %% Private API
 %% ===================================================================
 
-compile("rawlex", Path, _DestPath, _ErlOpts) ->
-    rebar_api:info("~P", [efene:to_raw_lex(Path), 1000]);
-compile("lex", Path, _DestPath, _ErlOpts) ->
-    rebar_api:info("~P", [efene:to_lex(Path), 1000]);
-compile("ast", Path, _DestPath, _ErlOpts) ->
-    rebar_api:info("~P", [efene:to_ast(Path), 1000]);
-compile("mod", Path, _DestPath, _ErlOpts) ->
-    rebar_api:info("~P", [efene:to_mod(Path), 1000]);
-compile("erl", Path, DestDirPath, _ErlOpts) ->
+get_destpath(Path, DestDirPath, Ext) ->
     BaseName = filename:basename(Path, ".fn"),
-    DestName = BaseName ++ ".erl",
+    DestName = BaseName ++ "." ++ Ext,
     DestPath = filename:join(DestDirPath, DestName),
     rebar_api:info("writing to ~s", [DestPath]),
-    file:write_file(DestPath, efene:to_erl(Path)),
-    ok;
-compile("erlast", Path, _DestPath, _ErlOpts) ->
-    Data = case efene:to_erl_ast(Path) of
-               {ok, {Ast, _State}} -> Ast;
-               Other -> Other
-           end,
-    rebar_api:info("~P", [Data, 1000]);
+    DestPath.
+
+write_terms_to_file(Term, DestPath) ->
+    {ok, Handle} = file:open(DestPath, [write]),
+    io:format(Handle, "~p~n", [Term]),
+    file:close(Handle).
+
+compile(Ext="rawlex", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    write_terms_to_file(efene:to_raw_lex(Path), DestPath);
+compile(Ext="lex", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    write_terms_to_file(efene:to_lex(Path), DestPath);
+compile(Ext="ast", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    write_terms_to_file(efene:to_ast(Path), DestPath);
+compile(Ext="mod", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    write_terms_to_file(efene:to_mod(Path), DestPath);
+compile(Ext="erl", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    file:write_file(DestPath, efene:to_erl(Path));
+compile(Ext="erlast", Path, DestDirPath, _ErlOpts) ->
+    DestPath = get_destpath(Path, DestDirPath, Ext),
+    case efene:to_erl_ast(Path) of
+        {ok, {Ast, _State}} ->
+            write_terms_to_file(Ast, DestPath);
+        Other ->
+            rebar_api:error("Unknown result: ~p", [Other])
+    end;
 compile("beam", Path, DestPath, ErlOpts) ->
     case efene:compile(Path, DestPath, ErlOpts) of
         {error, _}=Error ->
@@ -113,10 +142,8 @@ compile("beam", Path, DestPath, ErlOpts) ->
 compile(Format, _Path, _DestPath, _ErlOpts) ->
     rebar_api:error("Invalid format: ~s", [Format]).
 
-compile_source(State, ErlOpts, Source, DestPath) ->
+compile_source(ErlOpts, Source, DestPath, Format) ->
     ok = filelib:ensure_dir(DestPath),
-    {RawOpts, _} = rebar_state:command_parsed_args(State) ,
-    Format = proplists:get_value(format, RawOpts, "beam"),
     rebar_api:info("Compiling ~s", [Source]),
     compile(Format, Source, filename:dirname(DestPath), ErlOpts).
 
