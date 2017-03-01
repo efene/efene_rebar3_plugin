@@ -42,9 +42,16 @@ do(State) ->
                AppInfo ->
                    [AppInfo]
            end,
+
+    {RawOpts, _} = rebar_state:command_parsed_args(State) ,
+    Format = proplists:get_value(format, RawOpts, "beam"),
+    FirstFiles = [],
+    SourceExt = ".fn",
+    TargetExt = "." ++ Format,
+
     [begin
          Opts = rebar_app_info:opts(AppInfo),
-         OutDir = rebar_app_info:ebin_dir(AppInfo),
+         TargetDir = rebar_app_info:ebin_dir(AppInfo),
          SourceDir = filename:join(rebar_app_info:dir(AppInfo), "src"),
 
          CompileFun = fun(Source, Target, Opts1) ->
@@ -52,7 +59,8 @@ do(State) ->
                               compile_source(State, ErlOpts, Source, Target)
                       end,
 
-         rebar_base_compiler:run(Opts, [], SourceDir, ".fn", OutDir, ".beam", CompileFun, [])
+         rebar_base_compiler:run(Opts, FirstFiles, SourceDir, SourceExt,
+                                 TargetDir, TargetExt, CompileFun, [])
      end || AppInfo <- Apps],
 
     {ok, State}.
@@ -73,8 +81,13 @@ compile("ast", Path, _DestPath, _ErlOpts) ->
     rebar_api:info("~P", [efene:to_ast(Path), 1000]);
 compile("mod", Path, _DestPath, _ErlOpts) ->
     rebar_api:info("~P", [efene:to_mod(Path), 1000]);
-compile("erl", Path, _DestPath, _ErlOpts) ->
-    rebar_api:info("~s", [efene:to_erl(Path)]);
+compile("erl", Path, DestDirPath, _ErlOpts) ->
+    BaseName = filename:basename(Path, ".fn"),
+    DestName = BaseName ++ ".erl",
+    DestPath = filename:join(DestDirPath, DestName),
+    rebar_api:info("writing to ~s", [DestPath]),
+    file:write_file(DestPath, efene:to_erl(Path)),
+    ok;
 compile("erlast", Path, _DestPath, _ErlOpts) ->
     Data = case efene:to_erl_ast(Path) of
                {ok, {Ast, _State}} -> Ast;
