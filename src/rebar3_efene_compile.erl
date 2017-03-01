@@ -66,46 +66,46 @@ format_error(Reason) ->
 %% ===================================================================
 
 compile("rawlex", Path, _DestPath, _ErlOpts) ->
-    io:format("~P~n", [efene:to_raw_lex(Path), 1000]);
+    rebar_api:info("~P", [efene:to_raw_lex(Path), 1000]);
 compile("lex", Path, _DestPath, _ErlOpts) ->
-    io:format("~P~n", [efene:to_lex(Path), 1000]);
+    rebar_api:info("~P", [efene:to_lex(Path), 1000]);
 compile("ast", Path, _DestPath, _ErlOpts) ->
-    io:format("~P~n", [efene:to_ast(Path), 1000]);
+    rebar_api:info("~P", [efene:to_ast(Path), 1000]);
 compile("mod", Path, _DestPath, _ErlOpts) ->
-    io:format("~P~n", [efene:to_mod(Path), 1000]);
+    rebar_api:info("~P", [efene:to_mod(Path), 1000]);
 compile("erl", Path, _DestPath, _ErlOpts) ->
-    io:format("~s~n", [efene:to_erl(Path)]);
+    rebar_api:info("~s", [efene:to_erl(Path)]);
 compile("erlast", Path, _DestPath, _ErlOpts) ->
     Data = case efene:to_erl_ast(Path) of
                {ok, {Ast, _State}} -> Ast;
                Other -> Other
            end,
-    io:format("~P~n", [Data, 1000]);
+    rebar_api:info("~P", [Data, 1000]);
 compile("beam", Path, DestPath, ErlOpts) ->
     case efene:compile(Path, DestPath, ErlOpts) of
         {error, _}=Error ->
-            efene:print_errors([Error], "errors");
+            FmtErrors = [fn_error:normalize(Error)],
+            {error, FmtErrors, []};
         {error, Errors, Warnings} ->
-            efene:print_errors(Errors, "errors"),
-            efene:print_errors(Warnings, "warnings"),
-            ok;
+            FmtErrors = [fn_error:normalize(Error) || Error  <- Errors],
+            FmtWarnings = [fn_error:normalize(Warn) || Warn  <- Warnings],
+            {error, FmtErrors, FmtWarnings};
         {ok, CompileInfo} ->
-            efene:print_errors(proplists:get_value(warnings, CompileInfo, []), "warnings"),
-            ok;
+            Warnings = proplists:get_value(warnings, CompileInfo, []),
+            FmtWarnings = [fn_error:normalize(Warn) || Warn  <- Warnings],
+            {ok, FmtWarnings};
         Other ->
-            io:format("unknown result: ~p~n", [Other]),
-            Other
+            {error, [io_lib:format("Unknown result: ~p", [Other])], []}
     end;
 compile(Format, _Path, _DestPath, _ErlOpts) ->
-    io:format("Invalid format: ~s~n", [Format]).
+    rebar_api:error("Invalid format: ~s", [Format]).
 
 compile_source(State, ErlOpts, Source, DestPath) ->
     ok = filelib:ensure_dir(DestPath),
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
-    io:format("Compiling ~s~n", [Source]),
-    compile(Format, Source, filename:dirname(DestPath), ErlOpts),
-    ok.
+    rebar_api:info("Compiling ~s", [Source]),
+    compile(Format, Source, filename:dirname(DestPath), ErlOpts).
 
 help(format) -> "format to compile code to, one of rawlex, lex, ast, mod, erlast, erl, beam";
 help(file) -> "file to compile, if omited all files in the project are compiled".
