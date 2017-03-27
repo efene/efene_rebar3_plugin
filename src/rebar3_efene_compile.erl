@@ -2,6 +2,8 @@
 -behaviour(provider).
 
 -export([init/1, do/1, format_error/1]).
+% for rebar3_efene_ct
+-export([do/3]).
 
 %-include_lib("rebar3/include/rebar.hrl").
 
@@ -31,6 +33,9 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
+    do(State, "src", fun rebar_app_info:ebin_dir/1).
+
+do(State, SourceDirName, GetTargetDirFn) ->
     DepsPaths = rebar_state:code_paths(State, all_deps),
     %PluginDepsPaths = rebar_state:code_paths(State, all_plugin_deps),
     %rebar_utils:remove_from_code_path(PluginDepsPaths),
@@ -39,22 +44,22 @@ do(State) ->
     {RawOpts, _} = rebar_state:command_parsed_args(State) ,
     Format = proplists:get_value(format, RawOpts, "beam"),
     case proplists:get_value(file, RawOpts, undefined) of
-        undefined -> compile_all(State, Format);
-        FilePath -> compile_file(State, FilePath, Format)
+        undefined -> compile_all(State, Format, SourceDirName, GetTargetDirFn);
+        FilePath -> compile_file(State, FilePath, Format, GetTargetDirFn)
     end.
 
-compile_file(State, Path, Format) ->
+compile_file(State, Path, Format, GetTargetDirFn) ->
     AppInfo = case rebar_state:current_app(State) of
                undefined -> hd(rebar_state:project_apps(State));
                AppInfo0 -> AppInfo0
            end,
-    TargetDir = rebar_app_info:ebin_dir(AppInfo),
+    TargetDir = GetTargetDirFn(AppInfo),
     ErlOpts = rebar_state:get(State, erl_opts, []),
     rebar_api:info("Compiling ~s", [Path]),
     compile(Format, Path, TargetDir, ErlOpts),
     {ok, State}.
 
-compile_all(State, Format) ->
+compile_all(State, Format, SourceDirName, GetTargetDirFn) ->
     Apps = case rebar_state:current_app(State) of
                undefined -> rebar_state:project_apps(State);
                AppInfo -> [AppInfo]
@@ -66,8 +71,8 @@ compile_all(State, Format) ->
 
     [begin
          Opts = rebar_app_info:opts(AppInfo),
-         TargetDir = rebar_app_info:ebin_dir(AppInfo),
-         SourceDir = filename:join(rebar_app_info:dir(AppInfo), "src"),
+         TargetDir = GetTargetDirFn(AppInfo),
+         SourceDir = filename:join(rebar_app_info:dir(AppInfo), SourceDirName),
 
          CompileFun = fun(Source, Target, Opts1) ->
                               ErlOpts = rebar_opts:erl_opts(Opts1),
