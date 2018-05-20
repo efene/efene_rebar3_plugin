@@ -6,6 +6,7 @@
 -export([do/3]).
 
 %-include_lib("rebar3/include/rebar.hrl").
+-include_lib("kernel/include/file.hrl").
 
 -define(PROVIDER, compile).
 -define(DEPS, [{default, install_deps}, {default, app_discovery}]).
@@ -148,9 +149,24 @@ compile(Format, _Path, _DestPath, _ErlOpts) ->
     rebar_api:error("Invalid format: ~s", [Format]).
 
 compile_source(ErlOpts, Source, DestPath, Format) ->
+    {ok, SourceFileInfo} = file:read_file_info(Source),
+    NeedsCompile = case file:read_file_info(DestPath) of
+                       {ok, DestFileInfo} ->
+                           #file_info{mtime=SourceMTime}=SourceFileInfo,
+                           #file_info{mtime=DestMTime}=DestFileInfo,
+                           SourceMSecs = calendar:datetime_to_gregorian_seconds(SourceMTime),
+                           DestMSecs = calendar:datetime_to_gregorian_seconds(DestMTime),
+                           SourceMSecs > DestMSecs;
+                       {error, _} ->
+                           true
+                   end,
     ok = filelib:ensure_dir(DestPath),
-    rebar_api:info("Compiling ~s", [Source]),
-    compile(Format, Source, filename:dirname(DestPath), ErlOpts).
+    if NeedsCompile ->
+            rebar_api:info("Compiling ~s", [Source]),
+            compile(Format, Source, filename:dirname(DestPath), ErlOpts);
+       true ->
+            rebar_api:info("Skipping  ~s", [Source])
+    end.
 
 help(format) -> "format to compile code to, one of rawlex, lex, ast, mod, erlast, erl, beam";
 help(file) -> "file to compile, if omited all files in the project are compiled".
