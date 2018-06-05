@@ -156,7 +156,7 @@ compile_source(ErlOpts, Source, DestPath, Format) ->
                            #file_info{mtime=DestMTime}=DestFileInfo,
                            SourceMSecs = calendar:datetime_to_gregorian_seconds(SourceMTime),
                            DestMSecs = calendar:datetime_to_gregorian_seconds(DestMTime),
-                           SourceMSecs > DestMSecs;
+                           SourceMSecs =/= DestMSecs;
                        {error, _} ->
                            true
                    end,
